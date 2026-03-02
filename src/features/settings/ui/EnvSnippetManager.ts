@@ -296,7 +296,7 @@ export class EnvSnippetManager {
     await this.plugin.saveSettings();
 
     this.onContextLimitsChange?.();
-    const view = this.plugin.app.workspace.getLeavesOfType('claudian-view')[0]?.view as ClaudianView | undefined;
+    const view = this.plugin.app.workspace.getLeavesOfType('codexian-view')[0]?.view as ClaudianView | undefined;
     view?.refreshModelSelector();
   }
 

@@ -82,9 +82,14 @@ const context = await esbuild.context({
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
   outfile: 'main.js',
-  // Shim import.meta.url for CJS — Codex SDK uses createRequire(import.meta.url)
+  // Shim import.meta.url for CJS — Codex SDK uses createRequire(import.meta.url).
+  // Wrapped in try-catch: __filename may not resolve in all Electron contexts.
   banner: {
-    js: 'var __import_meta_url = require("url").pathToFileURL(__filename).href;',
+    js: [
+      'var __import_meta_url;',
+      'try { __import_meta_url = require("url").pathToFileURL(__filename).href; }',
+      'catch(_) { __import_meta_url = "file:///codexian/main.js"; }',
+    ].join(' '),
   },
   define: {
     'import.meta.url': '__import_meta_url',

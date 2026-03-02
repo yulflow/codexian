@@ -297,7 +297,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
 
             // Update all views' layouts immediately
-            for (const leaf of this.plugin.app.workspace.getLeavesOfType('claudian-view')) {
+            for (const leaf of this.plugin.app.workspace.getLeavesOfType('codexian-view')) {
               if (leaf.view instanceof ClaudianView) {
                 leaf.view.updateLayoutForPosition();
               }
@@ -524,7 +524,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
             this.plugin.settings.show1MModel = value;
             await this.plugin.saveSettings();
 
-            const view = this.plugin.app.workspace.getLeavesOfType('claudian-view')[0]?.view as ClaudianView | undefined;
+            const view = this.plugin.app.workspace.getLeavesOfType('codexian-view')[0]?.view as ClaudianView | undefined;
             view?.refreshModelSelector();
           })
       );
