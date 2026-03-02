@@ -1,10 +1,9 @@
-import type { Options } from '@anthropic-ai/claude-agent-sdk';
-import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
+import { Codex } from '@openai/codex-sdk';
 
 import { buildRefineSystemPrompt } from '../../../core/prompts/instructionRefine';
-import { type InstructionRefineResult, THINKING_BUDGETS } from '../../../core/types';
+import { type InstructionRefineResult } from '../../../core/types';
 import type ClaudianPlugin from '../../../main';
-import { getEnhancedPath, getMissingNodeError, parseEnvironmentVariables } from '../../../utils/env';
+import { getEnhancedPath, parseEnvironmentVariables } from '../../../utils/env';
 import { getVaultPath } from '../../../utils/path';
 
 export type RefineProgressCallback = (update: InstructionRefineResult) => void;
@@ -12,42 +11,38 @@ export type RefineProgressCallback = (update: InstructionRefineResult) => void;
 export class InstructionRefineService {
   private plugin: ClaudianPlugin;
   private abortController: AbortController | null = null;
-  private sessionId: string | null = null;
+  private threadId: string | null = null;
   private existingInstructions: string = '';
 
   constructor(plugin: ClaudianPlugin) {
     this.plugin = plugin;
   }
 
-  /** Resets conversation state for a new refinement session. */
   resetConversation(): void {
-    this.sessionId = null;
+    this.threadId = null;
   }
 
-  /** Refines a raw instruction from user input. */
   async refineInstruction(
     rawInstruction: string,
     existingInstructions: string,
     onProgress?: RefineProgressCallback
   ): Promise<InstructionRefineResult> {
-    this.sessionId = null;
+    this.threadId = null;
     this.existingInstructions = existingInstructions;
     const prompt = `Please refine this instruction: "${rawInstruction}"`;
     return this.sendMessage(prompt, onProgress);
   }
 
-  /** Continues conversation with a follow-up message (for clarifications). */
   async continueConversation(
     message: string,
     onProgress?: RefineProgressCallback
   ): Promise<InstructionRefineResult> {
-    if (!this.sessionId) {
+    if (!this.threadId) {
       return { success: false, error: 'No active conversation to continue' };
     }
     return this.sendMessage(message, onProgress);
   }
 
-  /** Cancels any ongoing query. */
   cancel(): void {
     if (this.abortController) {
       this.abortController.abort();
@@ -64,72 +59,61 @@ export class InstructionRefineService {
       return { success: false, error: 'Could not determine vault path' };
     }
 
-    const resolvedClaudePath = this.plugin.getResolvedClaudeCliPath();
-    if (!resolvedClaudePath) {
-      return { success: false, error: 'Claude CLI not found. Please install Claude Code CLI.' };
-    }
-
     this.abortController = new AbortController();
 
-    // Parse custom environment variables
     const customEnv = parseEnvironmentVariables(this.plugin.getActiveEnvironmentVariables());
-    const enhancedPath = getEnhancedPath(customEnv.PATH, resolvedClaudePath);
-    const missingNodeError = getMissingNodeError(resolvedClaudePath, enhancedPath);
-    if (missingNodeError) {
-      return { success: false, error: missingNodeError };
-    }
+    const codexPath = this.plugin.settings.claudeCliPath || undefined;
+    const enhancedPath = getEnhancedPath(customEnv.PATH, codexPath || '');
 
-    const options: Options = {
-      cwd: vaultPath,
-      systemPrompt: buildRefineSystemPrompt(this.existingInstructions),
-      model: this.plugin.settings.model,
-      abortController: this.abortController,
-      pathToClaudeCodeExecutable: resolvedClaudePath,
-      env: {
-        ...process.env,
-        ...customEnv,
-        PATH: enhancedPath,
-      },
-      tools: [], // No tools needed for instruction refinement
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
-      settingSources: this.plugin.settings.loadUserClaudeSettings
-        ? ['user', 'project']
-        : ['project'],
-    };
+    const codex = new Codex({
+      codexPathOverride: codexPath,
+      apiKey: customEnv.OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+      env: { ...process.env, ...customEnv, PATH: enhancedPath },
+    });
 
-    if (this.sessionId) {
-      options.resume = this.sessionId;
-    }
-
-    const budgetSetting = this.plugin.settings.thinkingBudget;
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === budgetSetting);
-    if (budgetConfig && budgetConfig.tokens > 0) {
-      options.maxThinkingTokens = budgetConfig.tokens;
-    }
+    const thread = this.threadId
+      ? codex.resumeThread(this.threadId, {
+          workingDirectory: vaultPath,
+          skipGitRepoCheck: true,
+          sandboxMode: 'read-only',
+          approvalPolicy: 'never',
+        })
+      : codex.startThread({
+          workingDirectory: vaultPath,
+          skipGitRepoCheck: true,
+          sandboxMode: 'read-only',
+          approvalPolicy: 'never',
+          model: this.plugin.settings.model,
+        });
 
     try {
-      const response = agentQuery({ prompt, options });
+      const systemPrompt = buildRefineSystemPrompt(this.existingInstructions);
+      const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+
+      const { events } = await thread.runStreamed(fullPrompt, {
+        signal: this.abortController.signal,
+      });
+
       let responseText = '';
 
-      for await (const message of response) {
+      for await (const event of events) {
         if (this.abortController?.signal.aborted) {
-          await response.interrupt();
           return { success: false, error: 'Cancelled' };
         }
 
-        if (message.type === 'system' && message.subtype === 'init' && message.session_id) {
-          this.sessionId = message.session_id;
+        if (event.type === 'thread.started') {
+          this.threadId = event.thread_id;
         }
 
-        const text = this.extractTextFromMessage(message);
-        if (text) {
-          responseText += text;
-          // Stream progress updates
+        if (event.type === 'item.updated' && event.item.type === 'agent_message') {
+          responseText = event.item.text;
           if (onProgress) {
-            const partialResult = this.parseResponse(responseText);
-            onProgress(partialResult);
+            onProgress(this.parseResponse(responseText));
           }
+        }
+
+        if (event.type === 'item.completed' && event.item.type === 'agent_message') {
+          responseText = event.item.text;
         }
       }
 
@@ -142,31 +126,17 @@ export class InstructionRefineService {
     }
   }
 
-  /** Parses response text for <instruction> tag. */
   private parseResponse(responseText: string): InstructionRefineResult {
     const instructionMatch = responseText.match(/<instruction>([\s\S]*?)<\/instruction>/);
     if (instructionMatch) {
       return { success: true, refinedInstruction: instructionMatch[1].trim() };
     }
 
-    // No instruction tag - treat as clarification question
     const trimmed = responseText.trim();
     if (trimmed) {
       return { success: true, clarification: trimmed };
     }
 
     return { success: false, error: 'Empty response' };
-  }
-
-  /** Extracts text content from SDK message. */
-  private extractTextFromMessage(message: { type: string; message?: { content?: Array<{ type: string; text?: string }> } }): string {
-    if (message.type !== 'assistant' || !message.message?.content) {
-      return '';
-    }
-
-    return message.message.content
-      .filter((block): block is { type: 'text'; text: string } => block.type === 'text' && !!block.text)
-      .map(block => block.text)
-      .join('');
   }
 }

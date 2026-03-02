@@ -4,8 +4,23 @@
  * PreToolUse hooks for enforcing blocklist and vault restriction.
  */
 
-import type { HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import { Notice } from 'obsidian';
+
+// Codex SDK uses approvalPolicy/sandboxMode instead of hooks.
+// These types maintain compile-time compatibility for the hook system.
+interface HookResult {
+  continue: boolean;
+  hookSpecificOutput?: {
+    hookEventName: 'PreToolUse';
+    permissionDecision: 'deny' | 'allow';
+    permissionDecisionReason?: string;
+  };
+}
+type HookCallback = (hookInput: unknown) => Promise<HookResult>;
+interface HookCallbackMatcher {
+  matcher?: string;
+  hooks: HookCallback[];
+}
 
 import type { PathAccessType } from '../../utils/path';
 import type { PathCheckContext } from '../security/BashPathValidator';

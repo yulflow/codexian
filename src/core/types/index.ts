@@ -15,7 +15,6 @@ export {
 
 // Model types
 export {
-  BETA_1M_CONTEXT,
   type ClaudeModel,
   CONTEXT_WINDOW_1M,
   CONTEXT_WINDOW_STANDARD,

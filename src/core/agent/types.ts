@@ -2,10 +2,13 @@
  * Types and constants for the ClaudianService module.
  */
 
-import type { SDKMessage, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-
 import type { SystemPromptSettings } from '../prompts/mainAgent';
 import type { ClaudeModel, PermissionMode, StreamChunk } from '../types';
+
+// Codex SDK doesn't use SDKMessage/SDKUserMessage types.
+// These placeholders maintain compatibility with existing type references.
+type SDKMessage = Record<string, unknown>;
+type SDKUserMessage = Record<string, unknown>;
 
 export interface TextContentBlock {
   type: 'text';

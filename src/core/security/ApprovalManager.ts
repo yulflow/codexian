@@ -1,6 +1,13 @@
 /** Permission utilities for tool action approval. */
 
-import type { PermissionUpdate, PermissionUpdateDestination } from '@anthropic-ai/claude-agent-sdk';
+// Codex SDK doesn't use permission updates. These types maintain compatibility.
+type PermissionUpdateDestination = 'session' | 'projectSettings';
+interface PermissionUpdate {
+  type: 'addRules' | 'replaceRules' | string;
+  behavior?: 'allow' | 'deny';
+  rules?: Array<{ toolName: string; ruleContent?: string }>;
+  destination?: PermissionUpdateDestination;
+}
 
 import {
   TOOL_BASH,

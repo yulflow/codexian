@@ -6,8 +6,18 @@
  * where the minimal PATH doesn't include Node.js.
  */
 
-import type { SpawnedProcess, SpawnOptions } from '@anthropic-ai/claude-agent-sdk';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
+
+// Codex SDK handles process spawning internally.
+// These types are kept for compatibility with the existing spawn utility.
+interface SpawnOptions {
+  command: string;
+  args: string[];
+  cwd?: string;
+  env?: Record<string, string | undefined>;
+  signal?: AbortSignal;
+}
+type SpawnedProcess = ChildProcess;
 
 import { findNodeExecutable } from '../../utils/env';
 

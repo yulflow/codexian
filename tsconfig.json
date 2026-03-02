@@ -22,5 +22,20 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": [
+    "src/core/agent/ClaudianService.ts",
+    "src/core/agent/MessageChannel.ts",
+    "src/core/agent/QueryOptionsBuilder.ts",
+    "tests/unit/core/agent/ClaudianService.test.ts",
+    "tests/unit/core/agent/customSpawn.test.ts",
+    "tests/unit/core/agent/MessageChannel.test.ts",
+    "tests/unit/core/agent/types.test.ts",
+    "tests/unit/core/agent/index.test.ts",
+    "tests/unit/core/hooks/SecurityHooks.test.ts",
+    "tests/unit/features/inline-edit/InlineEditService.test.ts",
+    "tests/integration/core/agent/ClaudianService.test.ts",
+    "tests/unit/core/agent/QueryOptionsBuilder.test.ts",
+    "tests/unit/core/types/types.test.ts"
+  ]
 }

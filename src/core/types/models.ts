@@ -2,22 +2,19 @@
  * Model type definitions and constants.
  */
 
-import type { SdkBeta } from '@anthropic-ai/claude-agent-sdk';
-
-/** Model identifier (string to support custom models via environment variables). */
+/** Model identifier (string to support custom models). */
 export type ClaudeModel = string;
 
 export const DEFAULT_CLAUDE_MODELS: { value: ClaudeModel; label: string; description: string }[] = [
-  { value: 'haiku', label: 'Haiku', description: 'Fast and efficient' },
-  { value: 'sonnet', label: 'Sonnet', description: 'Balanced performance' },
-  { value: 'opus', label: 'Opus', description: 'Most capable' },
+  { value: 'codex-mini', label: 'Codex Mini', description: 'Fast and efficient' },
+  { value: 'o4-mini', label: 'o4 Mini', description: 'Balanced reasoning' },
+  { value: 'o3', label: 'o3', description: 'Advanced reasoning' },
+  { value: 'gpt-4.1', label: 'GPT-4.1', description: 'Most capable' },
 ];
-
-export const BETA_1M_CONTEXT: SdkBeta = 'context-1m-2025-08-07';
 
 export interface ModelWithBetas {
   model: string;
-  betas: SdkBeta[];
+  betas?: string[];
 }
 
 export interface ModelWithoutBetas {
@@ -25,19 +22,10 @@ export interface ModelWithoutBetas {
   betas?: undefined;
 }
 
-/** Resolves a model to its base model and optional beta flags. */
-export function resolveModelWithBetas(model: string, include1MBeta: true): ModelWithBetas;
-export function resolveModelWithBetas(model: string, include1MBeta?: false): ModelWithoutBetas;
-export function resolveModelWithBetas(model: string, include1MBeta: boolean): ModelWithBetas | ModelWithoutBetas;
-export function resolveModelWithBetas(model: string, include1MBeta = false): ModelWithBetas | ModelWithoutBetas {
+/** Resolves a model to its base model. Betas are a no-op for Codex SDK. */
+export function resolveModelWithBetas(model: string, _include1MBeta?: boolean): ModelWithoutBetas {
   if (!model || typeof model !== 'string') {
     throw new Error('resolveModelWithBetas: model is required and must be a non-empty string');
-  }
-  if (include1MBeta) {
-    return {
-      model,
-      betas: [BETA_1M_CONTEXT],
-    };
   }
   return { model };
 }

@@ -1,10 +1,10 @@
 {
-  "id": "claudian",
-  "name": "Claudian",
-  "version": "1.3.66",
+  "id": "codexian",
+  "name": "Codexian",
+  "version": "0.1.0",
   "minAppVersion": "1.4.5",
-  "description": "Embeds Claude Code as an AI collaborator in your vault. Your vault becomes Claude's working directory, giving it full agentic capabilities: file read/write, search, bash commands, and multi-step workflows.",
-  "author": "Yishen Tu",
-  "authorUrl": "https://github.com/YishenTu",
+  "description": "Embeds OpenAI Codex as an AI collaborator in your vault. Your vault becomes Codex's working directory, giving it full agentic capabilities: file read/write, search, bash commands, and multi-step workflows.",
+  "author": "Seoyul Son",
+  "authorUrl": "https://github.com/yulflow",
   "isDesktopOnly": true
 }

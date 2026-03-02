@@ -1,5 +1,4 @@
-import type { HookCallbackMatcher, Options } from '@anthropic-ai/claude-agent-sdk';
-import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
+import { Codex } from '@openai/codex-sdk';
 
 import { getInlineEditSystemPrompt } from '../../core/prompts/inlineEdit';
 import { getPathFromToolInput } from '../../core/tools/toolInput';
@@ -11,11 +10,10 @@ import {
   TOOL_LS,
   TOOL_READ,
 } from '../../core/tools/toolNames';
-import { THINKING_BUDGETS } from '../../core/types';
 import type ClaudianPlugin from '../../main';
 import { appendContextFiles } from '../../utils/context';
 import { type CursorContext } from '../../utils/editor';
-import { getEnhancedPath, getMissingNodeError, parseEnvironmentVariables } from '../../utils/env';
+import { getEnhancedPath, parseEnvironmentVariables } from '../../utils/env';
 import { getPathAccessType, getVaultPath, type PathAccessType } from '../../utils/path';
 
 export type InlineEditMode = 'selection' | 'cursor';
@@ -25,7 +23,7 @@ export interface InlineEditSelectionRequest {
   instruction: string;
   notePath: string;
   selectedText: string;
-  startLine?: number;  // 1-indexed
+  startLine?: number;
   lineCount?: number;
   contextFiles?: string[];
 }
@@ -42,8 +40,8 @@ export type InlineEditRequest = InlineEditSelectionRequest | InlineEditCursorReq
 
 export interface InlineEditResult {
   success: boolean;
-  editedText?: string;      // replacement (selection mode)
-  insertedText?: string;    // insertion (cursor mode)
+  editedText?: string;
+  insertedText?: string;
   clarification?: string;
   error?: string;
 }
@@ -70,7 +68,7 @@ export function parseInlineEditResponse(responseText: string): InlineEditResult 
 
 function buildCursorPrompt(request: InlineEditCursorRequest): string {
   const ctx = request.cursorContext;
-  const lineAttr = ` line="${ctx.line + 1}"`; // 1-indexed
+  const lineAttr = ` line="${ctx.line + 1}"`;
 
   let cursorContent: string;
   if (ctx.isInbetween) {
@@ -98,7 +96,6 @@ export function buildInlineEditPrompt(request: InlineEditRequest): string {
   if (request.mode === 'cursor') {
     prompt = buildCursorPrompt(request);
   } else {
-    // Instruction first for slash command detection
     const lineAttr = request.startLine && request.lineCount
       ? ` lines="${request.startLine}-${request.startLine + request.lineCount - 1}"`
       : '';
@@ -111,7 +108,6 @@ export function buildInlineEditPrompt(request: InlineEditRequest): string {
     ].join('\n');
   }
 
-  // User content first for slash command detection
   if (request.contextFiles && request.contextFiles.length > 0) {
     prompt = appendContextFiles(prompt, request.contextFiles);
   }
@@ -119,141 +115,44 @@ export function buildInlineEditPrompt(request: InlineEditRequest): string {
   return prompt;
 }
 
-export function createReadOnlyHook(): HookCallbackMatcher {
-  return {
-    hooks: [
-      async (hookInput) => {
-        const input = hookInput as {
-          tool_name: string;
-          tool_input: Record<string, unknown>;
-        };
-        const toolName = input.tool_name;
-
-        if (isReadOnlyTool(toolName)) {
-          return { continue: true };
-        }
-
-        return {
-          continue: false,
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse' as const,
-            permissionDecision: 'deny' as const,
-            permissionDecisionReason: `Inline edit mode: tool "${toolName}" is not allowed (read-only)`,
-          },
-        };
-      },
-    ],
-  };
+// Hook types are no longer used with Codex SDK (uses sandboxMode instead).
+// These functions are kept for compatibility with existing imports.
+export function createReadOnlyHook(): unknown {
+  return null;
 }
 
-export function createVaultRestrictionHook(vaultPath: string): HookCallbackMatcher {
-  const fileTools = [TOOL_READ, TOOL_GLOB, TOOL_GREP, TOOL_LS] as const;
-
-  return {
-    hooks: [
-      async (hookInput) => {
-        const input = hookInput as {
-          tool_name: string;
-          tool_input: Record<string, unknown>;
-        };
-
-        const toolName = input.tool_name;
-        if (!fileTools.includes(toolName as (typeof fileTools)[number])) {
-          return { continue: true };
-        }
-
-        const filePath = getPathFromToolInput(toolName, input.tool_input);
-        if (!filePath) {
-          // Fail-closed: deny if we can't determine the path for a file tool
-          return {
-            continue: false,
-            hookSpecificOutput: {
-              hookEventName: 'PreToolUse' as const,
-              permissionDecision: 'deny' as const,
-              permissionDecisionReason: `Access denied: Could not determine path for "${toolName}" tool.`,
-            },
-          };
-        }
-
-        // Allows vault and ~/.claude/ paths (context/readwrite params are undefined)
-        let accessType: PathAccessType;
-        try {
-          accessType = getPathAccessType(filePath, undefined, undefined, vaultPath);
-        } catch {
-          // Fail-closed: deny if path validation throws (ENOENT, ELOOP, EPERM, etc.)
-          return {
-            continue: false,
-            hookSpecificOutput: {
-              hookEventName: 'PreToolUse' as const,
-              permissionDecision: 'deny' as const,
-              permissionDecisionReason: `Access denied: Failed to validate path "${filePath}".`,
-            },
-          };
-        }
-
-        if (accessType === 'vault' || accessType === 'context' || accessType === 'readwrite') {
-          return { continue: true };
-        }
-
-        return {
-          continue: false,
-          hookSpecificOutput: {
-            hookEventName: 'PreToolUse' as const,
-            permissionDecision: 'deny' as const,
-            permissionDecisionReason: `Access denied: Path "${filePath}" is outside allowed paths. Inline edit is restricted to vault and ~/.claude/ directories.`,
-          },
-        };
-      },
-    ],
-  };
+export function createVaultRestrictionHook(_vaultPath: string): unknown {
+  return null;
 }
 
-export function extractTextFromSdkMessage(message: any): string | null {
-  if (message.type === 'assistant' && message.message?.content) {
-    for (const block of message.message.content) {
-      if (block.type === 'text' && block.text) {
-        return block.text;
-      }
-    }
-  }
-
-  if (message.type === 'stream_event') {
-    const event = message.event;
-    if (event?.type === 'content_block_start' && event.content_block?.type === 'text') {
-      return event.content_block.text || null;
-    }
-    if (event?.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-      return event.delta.text || null;
-    }
-  }
-
+export function extractTextFromSdkMessage(_message: unknown): string | null {
+  // No longer used with Codex SDK (uses transformCodexEvent instead)
   return null;
 }
 
 export class InlineEditService {
   private plugin: ClaudianPlugin;
   private abortController: AbortController | null = null;
-  private sessionId: string | null = null;
+  private threadId: string | null = null;
 
   constructor(plugin: ClaudianPlugin) {
     this.plugin = plugin;
   }
 
   resetConversation(): void {
-    this.sessionId = null;
+    this.threadId = null;
   }
 
   async editText(request: InlineEditRequest): Promise<InlineEditResult> {
-    this.sessionId = null;
+    this.threadId = null;
     const prompt = buildInlineEditPrompt(request);
     return this.sendMessage(prompt);
   }
 
   async continueConversation(message: string, contextFiles?: string[]): Promise<InlineEditResult> {
-    if (!this.sessionId) {
+    if (!this.threadId) {
       return { success: false, error: 'No active conversation to continue' };
     }
-    // User content first for slash command detection
     let prompt = message;
     if (contextFiles && contextFiles.length > 0) {
       prompt = appendContextFiles(message, contextFiles);
@@ -267,72 +166,54 @@ export class InlineEditService {
       return { success: false, error: 'Could not determine vault path' };
     }
 
-    const resolvedClaudePath = this.plugin.getResolvedClaudeCliPath();
-    if (!resolvedClaudePath) {
-      return { success: false, error: 'Claude CLI not found. Please install Claude Code CLI.' };
-    }
-
     this.abortController = new AbortController();
 
     const customEnv = parseEnvironmentVariables(this.plugin.getActiveEnvironmentVariables());
-    const enhancedPath = getEnhancedPath(customEnv.PATH, resolvedClaudePath);
-    const missingNodeError = getMissingNodeError(resolvedClaudePath, enhancedPath);
-    if (missingNodeError) {
-      return { success: false, error: missingNodeError };
-    }
+    const codexPath = this.plugin.settings.claudeCliPath || undefined;
+    const enhancedPath = getEnhancedPath(customEnv.PATH, codexPath || '');
 
-    const options: Options = {
-      cwd: vaultPath,
-      systemPrompt: getInlineEditSystemPrompt(),
-      model: this.plugin.settings.model,
-      abortController: this.abortController,
-      pathToClaudeCodeExecutable: resolvedClaudePath,
-      env: {
-        ...process.env,
-        ...customEnv,
-        PATH: enhancedPath,
-      },
-      tools: [...READ_ONLY_TOOLS],
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
-      settingSources: this.plugin.settings.loadUserClaudeSettings
-        ? ['user', 'project']
-        : ['project'],
-      hooks: {
-        PreToolUse: [
-          createReadOnlyHook(),
-          createVaultRestrictionHook(vaultPath),
-        ],
-      },
-    };
+    const codex = new Codex({
+      codexPathOverride: codexPath,
+      apiKey: customEnv.OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+      env: { ...process.env, ...customEnv, PATH: enhancedPath },
+    });
 
-    if (this.sessionId) {
-      options.resume = this.sessionId;
-    }
+    const thread = this.threadId
+      ? codex.resumeThread(this.threadId, {
+          workingDirectory: vaultPath,
+          skipGitRepoCheck: true,
+          sandboxMode: 'read-only',
+          approvalPolicy: 'never',
+        })
+      : codex.startThread({
+          workingDirectory: vaultPath,
+          skipGitRepoCheck: true,
+          sandboxMode: 'read-only',
+          approvalPolicy: 'never',
+          model: this.plugin.settings.model,
+        });
 
-    const budgetSetting = this.plugin.settings.thinkingBudget;
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === budgetSetting);
-    if (budgetConfig && budgetConfig.tokens > 0) {
-      options.maxThinkingTokens = budgetConfig.tokens;
-    }
+    const systemPrompt = getInlineEditSystemPrompt();
+    const fullPrompt = `${systemPrompt}\n\n${prompt}`;
 
     try {
-      const response = agentQuery({ prompt, options });
+      const { events } = await thread.runStreamed(fullPrompt, {
+        signal: this.abortController.signal,
+      });
+
       let responseText = '';
 
-      for await (const message of response) {
+      for await (const event of events) {
         if (this.abortController?.signal.aborted) {
-          await response.interrupt();
           return { success: false, error: 'Cancelled' };
         }
 
-        if (message.type === 'system' && message.subtype === 'init' && message.session_id) {
-          this.sessionId = message.session_id;
+        if (event.type === 'thread.started') {
+          this.threadId = event.thread_id;
         }
 
-        const text = extractTextFromSdkMessage(message);
-        if (text) {
-          responseText += text;
+        if (event.type === 'item.completed' && event.item.type === 'agent_message') {
+          responseText = event.item.text;
         }
       }
 
