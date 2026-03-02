@@ -20,8 +20,19 @@ const prod = process.argv[2] === 'production';
 // Obsidian plugin folder path (set via OBSIDIAN_VAULT env var or .env.local)
 const OBSIDIAN_VAULT = process.env.OBSIDIAN_VAULT;
 const OBSIDIAN_PLUGIN_PATH = OBSIDIAN_VAULT && existsSync(OBSIDIAN_VAULT)
-  ? path.join(OBSIDIAN_VAULT, '.obsidian', 'plugins', 'claudian')
+  ? path.join(OBSIDIAN_VAULT, '.obsidian', 'plugins', 'codexian')
   : null;
+
+// Rewrite node: protocol imports to bare module names for Electron compatibility.
+// Obsidian's Electron doesn't support require("node:process") etc.
+const nodeProtocolPlugin = {
+  name: 'node-protocol-rewrite',
+  setup(build) {
+    build.onResolve({ filter: /^node:/ }, (args) => {
+      return { path: args.path.slice(5), external: true };
+    });
+  }
+};
 
 // Plugin to copy built files to Obsidian plugin folder
 const copyToObsidian = {
@@ -48,7 +59,7 @@ const copyToObsidian = {
 const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
-  plugins: [copyToObsidian],
+  plugins: [nodeProtocolPlugin, copyToObsidian],
   external: [
     'obsidian',
     'electron',
@@ -64,7 +75,6 @@ const context = await esbuild.context({
     '@lezer/highlight',
     '@lezer/lr',
     ...builtins,
-    ...builtins.map(m => `node:${m}`),
   ],
   format: 'cjs',
   target: 'es2018',
@@ -72,6 +82,13 @@ const context = await esbuild.context({
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
   outfile: 'main.js',
+  // Shim import.meta.url for CJS — Codex SDK uses createRequire(import.meta.url)
+  banner: {
+    js: 'var __import_meta_url = require("url").pathToFileURL(__filename).href;',
+  },
+  define: {
+    'import.meta.url': '__import_meta_url',
+  },
 });
 
 if (prod) {
