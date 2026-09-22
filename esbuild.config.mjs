@@ -2,7 +2,7 @@ import esbuild from 'esbuild';
 import path from 'path';
 import process from 'process';
 import builtins from 'builtin-modules';
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 // Load .env.local if it exists
 if (existsSync('.env.local')) {
@@ -34,6 +34,33 @@ const nodeProtocolPlugin = {
   }
 };
 
+// Post-build: wrap createRequire calls in try-catch for Electron/bundled context.
+// The Codex SDK uses createRequire(import.meta.url) internally to resolve platform
+// binaries, which fails in esbuild CJS bundles. This patches it to fall back to require.
+const patchCreateRequire = {
+  name: 'patch-create-require',
+  setup(build) {
+    build.onEnd((result) => {
+      if (result.errors.length > 0) return;
+      if (!existsSync('main.js')) return;
+
+      let content = readFileSync('main.js', 'utf-8');
+      const original = content;
+
+      // Pattern: var X = (0, Y.createRequire)(Z);
+      content = content.replace(
+        /var (\w+) = \(0, (\w+)\.createRequire\)\(([^)]+)\);/g,
+        'var $1; try { $1 = (0, $2.createRequire)($3); } catch(_e) { $1 = require; }'
+      );
+
+      if (content !== original) {
+        writeFileSync('main.js', content);
+        console.log('Patched createRequire calls for Electron compatibility');
+      }
+    });
+  }
+};
+
 // Plugin to copy built files to Obsidian plugin folder
 const copyToObsidian = {
   name: 'copy-to-obsidian',
@@ -59,7 +86,7 @@ const copyToObsidian = {
 const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
-  plugins: [nodeProtocolPlugin, copyToObsidian],
+  plugins: [nodeProtocolPlugin, patchCreateRequire, copyToObsidian],
   external: [
     'obsidian',
     'electron',

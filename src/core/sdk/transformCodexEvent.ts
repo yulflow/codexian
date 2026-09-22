@@ -81,7 +81,7 @@ export function* transformCodexEvent(
       break;
 
     case 'item.completed':
-      yield* handleItemCompleted(event.item);
+      yield* handleItemCompleted(event.item, tracker);
       break;
 
     case 'turn.completed':
@@ -167,8 +167,27 @@ function* handleItemUpdated(item: ThreadItem, tracker: DeltaTracker): Generator<
   }
 }
 
-function* handleItemCompleted(item: ThreadItem): Generator<StreamChunk> {
+function* handleItemCompleted(item: ThreadItem, tracker: DeltaTracker): Generator<StreamChunk> {
   switch (item.type) {
+    case 'agent_message': {
+      // Emit any text not already streamed via item.updated.
+      // DeltaTracker prevents duplicates: if item.updated already sent
+      // the full text, getDelta returns '' and nothing is yielded.
+      const delta = tracker.getDelta(item.id, item.text);
+      if (delta) {
+        yield { type: 'text', content: delta };
+      }
+      break;
+    }
+
+    case 'reasoning': {
+      const delta = tracker.getDelta(item.id, item.text);
+      if (delta) {
+        yield { type: 'thinking', content: delta };
+      }
+      break;
+    }
+
     case 'command_execution':
       yield {
         type: 'tool_result',
@@ -210,8 +229,6 @@ function* handleItemCompleted(item: ThreadItem): Generator<StreamChunk> {
     case 'error':
       yield { type: 'error', content: item.message };
       break;
-
-    // agent_message, reasoning — final text already streamed via item.updated
   }
 }
 

@@ -65,10 +65,10 @@
     }
   },
   "settings": {
-    "title": "Claudian 設定",
+    "title": "Codexian 設定",
     "customization": "カスタマイズ",
     "userName": {
-      "name": "Claudian はどのように呼びますか？",
+      "name": "Codexian はどのように呼びますか？",
       "desc": "パーソナライズされた挨拶に使用する名前（空欄で一般の挨拶）"
     },
     "excludedTags": {
@@ -138,7 +138,7 @@
     },
     "hiddenSlashCommands": {
       "name": "非表示コマンド",
-      "desc": "ドロップダウンから特定のスラッシュコマンドを非表示にします。Claudian に関係のない Claude Code コマンドを非表示にするのに便利です。先頭のスラッシュなしでコマンド名を1行に1つ入力してください。",
+      "desc": "ドロップダウンから特定のスラッシュコマンドを非表示にします。Codexian に関係のない Codex CLI コマンドを非表示にするのに便利です。先頭のスラッシュなしでコマンド名を1行に1つ入力してください。",
       "placeholder": "commit\nbuild\ntest"
     },
     "mcpServers": {
@@ -146,8 +146,8 @@
       "desc": "モデルコンテキストプロトコルサーバーを設定し、外部ツールやデータソースで Claude の機能を拡張します。コンテキスト保存モードのサーバーは @mention でアクティブにする必要があります。"
     },
     "plugins": {
-      "name": "Claude Code プラグイン",
-      "desc": "~/.claude/plugins から検出された Claude Code プラグインを有効化または無効化します。有効化されたプラグインは保管庫ごとに保存されます。"
+      "name": "Codex CLI プラグイン",
+      "desc": "~/.claude/plugins から検出された Codex CLI プラグインを有効化または無効化します。有効化されたプラグインは保管庫ごとに保存されます。"
     },
     "subagents": {
       "name": "Subagents",
@@ -189,7 +189,7 @@
     "safety": "セキュリティ",
     "loadUserSettings": {
       "name": "ユーザーClaude設定を読み込む",
-      "desc": "~/.claude/settings.json を読み込みます。有効にすると、ユーザーの Claude Code 許可ルールがセキュリティモードをバイパスする可能性があります。"
+      "desc": "~/.claude/settings.json を読み込みます。有効にすると、ユーザーの Codex CLI 許可ルールがセキュリティモードをバイパスする可能性があります。"
     },
     "enableBlocklist": {
       "name": "コマンドブラックリストを有効化",
@@ -271,7 +271,7 @@
     },
     "cliPath": {
       "name": "Claude CLI パス",
-      "desc": "Claude Code CLI のカスタムパス。空欄で自動検出を使用。",
+      "desc": "Codex CLI のカスタムパス。空欄で自動検出を使用。",
       "descWindows": "ネイティブインストーラーの場合は claude.exe を使用。npm/pnpm/yarn やその他のパッケージマネージャーでのインストールの場合は cli.js パスを使用（claude.cmd ではない）。",
       "descUnix": "\"which claude\" の出力を貼り付けてください - ネイティブと npm/pnpm/yarn インストールの両方で動作します。",
       "validation": {

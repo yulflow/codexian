@@ -65,10 +65,10 @@
     }
   },
   "settings": {
-    "title": "Configuración de Claudian",
+    "title": "Configuración de Codexian",
     "customization": "Personalización",
     "userName": {
-      "name": "¿Cómo debería Claudian llamarte?",
+      "name": "¿Cómo debería Codexian llamarte?",
       "desc": "Tu nombre para saludos personalizados (dejar vacío para saludos genéricos)"
     },
     "excludedTags": {
@@ -138,7 +138,7 @@
     },
     "hiddenSlashCommands": {
       "name": "Comandos ocultos",
-      "desc": "Oculta comandos slash específicos del menú desplegable. Útil para ocultar comandos de Claude Code que no son relevantes para Claudian. Ingresa nombres de comandos sin la barra inicial, uno por línea.",
+      "desc": "Oculta comandos slash específicos del menú desplegable. Útil para ocultar comandos de Codex CLI que no son relevantes para Codexian. Ingresa nombres de comandos sin la barra inicial, uno por línea.",
       "placeholder": "commit\nbuild\ntest"
     },
     "mcpServers": {
@@ -146,8 +146,8 @@
       "desc": "Configura servidores Model Context Protocol para extender las capacidades de Claude con herramientas y fuentes de datos externas. Los servidores con modo de guardado de contexto requieren @mention para activarse."
     },
     "plugins": {
-      "name": "Plugins de Claude Code",
-      "desc": "Habilita o deshabilita plugins de Claude Code descubiertos desde ~/.claude/plugins. Los plugins habilitados se almacenan por bóveda."
+      "name": "Plugins de Codex CLI",
+      "desc": "Habilita o deshabilita plugins de Codex CLI descubiertos desde ~/.claude/plugins. Los plugins habilitados se almacenan por bóveda."
     },
     "subagents": {
       "name": "Subagents",
@@ -271,7 +271,7 @@
     },
     "cliPath": {
       "name": "Ruta CLI Claude",
-      "desc": "Ruta personalizada a Claude Code CLI. Dejar vacío para detección automática.",
+      "desc": "Ruta personalizada a Codex CLI. Dejar vacío para detección automática.",
       "descWindows": "Para el instalador nativo, use claude.exe. Para instalaciones con npm/pnpm/yarn u otros gestores de paquetes, use la ruta cli.js (no claude.cmd).",
       "descUnix": "Pegue la salida de \"which claude\" — funciona tanto para instalaciones nativas como npm/pnpm/yarn.",
       "validation": {

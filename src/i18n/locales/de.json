@@ -65,10 +65,10 @@
     }
   },
   "settings": {
-    "title": "Claudian Einstellungen",
+    "title": "Codexian Einstellungen",
     "customization": "Anpassung",
     "userName": {
-      "name": "Wie soll Claudian dich nennen?",
+      "name": "Wie soll Codexian dich nennen?",
       "desc": "Dein Name für personalisierte Begrüßungen (leer lassen für allgemeine Begrüßungen)"
     },
     "excludedTags": {
@@ -138,7 +138,7 @@
     },
     "hiddenSlashCommands": {
       "name": "Ausgeblendete Befehle",
-      "desc": "Bestimmte Schrägstrich-Befehle aus dem Dropdown ausblenden. Nützlich, um Claude Code-Befehle auszublenden, die für Claudian nicht relevant sind. Gib Befehlsnamen ohne führenden Schrägstrich ein, einen pro Zeile.",
+      "desc": "Bestimmte Schrägstrich-Befehle aus dem Dropdown ausblenden. Nützlich, um Codex CLI-Befehle auszublenden, die für Codexian nicht relevant sind. Gib Befehlsnamen ohne führenden Schrägstrich ein, einen pro Zeile.",
       "placeholder": "commit\nbuild\ntest"
     },
     "mcpServers": {
@@ -146,8 +146,8 @@
       "desc": "Konfiguriere Model Context Protocol Server, um Claude mit externen Tools und Datenquellen zu erweitern. Server mit Kontext-Speichermodus benötigen @mention zur Aktivierung."
     },
     "plugins": {
-      "name": "Claude Code Plugins",
-      "desc": "Aktiviere oder deaktiviere Claude Code Plugins aus ~/.claude/plugins. Aktivierte Plugins werden pro Vault gespeichert."
+      "name": "Codex CLI Plugins",
+      "desc": "Aktiviere oder deaktiviere Codex CLI Plugins aus ~/.claude/plugins. Aktivierte Plugins werden pro Vault gespeichert."
     },
     "subagents": {
       "name": "Subagents",
@@ -271,7 +271,7 @@
     },
     "cliPath": {
       "name": "Claude CLI-Pfad",
-      "desc": "Benutzerdefinierter Pfad zum Claude Code CLI. Leer lassen für automatische Erkennung.",
+      "desc": "Benutzerdefinierter Pfad zum Codex CLI. Leer lassen für automatische Erkennung.",
       "descWindows": "Für den nativen Installer verwenden Sie claude.exe. Für npm/pnpm/yarn oder andere Paketmanager-Installationen verwenden Sie den cli.js-Pfad (nicht claude.cmd).",
       "descUnix": "Fügen Sie die Ausgabe von \"which claude\" ein — funktioniert sowohl für native als auch npm/pnpm/yarn-Installationen.",
       "validation": {

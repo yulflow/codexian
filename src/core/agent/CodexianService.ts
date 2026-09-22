@@ -10,6 +10,7 @@
  * - transformCodexEvent bridges ThreadEvent → StreamChunk for UI reuse
  */
 
+import { existsSync } from 'fs';
 import { Codex, type ThreadOptions, type Thread } from '@openai/codex-sdk';
 
 import type ClaudianPlugin from '../../main';
@@ -381,8 +382,10 @@ export class CodexianService {
 
     const options: ConstructorParameters<typeof Codex>[0] = {};
 
-    if (codexPath) {
-      options.codexPathOverride = codexPath;
+    // Always resolve codex binary path — bundled context can't use createRequire
+    const resolvedPath = this.resolveCodexPath(codexPath);
+    if (resolvedPath) {
+      options.codexPathOverride = resolvedPath;
     }
 
     // API key from environment variables or settings
@@ -392,7 +395,7 @@ export class CodexianService {
     }
 
     // Pass environment variables
-    const enhancedPath = getEnhancedPath(customEnv.PATH, codexPath || '');
+    const enhancedPath = getEnhancedPath(customEnv.PATH, resolvedPath || '');
     options.env = {
       ...process.env,
       ...customEnv,
@@ -400,6 +403,37 @@ export class CodexianService {
     };
 
     return new Codex(options);
+  }
+
+  /**
+   * Resolve the codex CLI binary path.
+   * In bundled Obsidian context, the SDK can't use createRequire to find
+   * platform-specific binaries, so we detect common install locations.
+   */
+  private resolveCodexPath(configuredPath?: string): string | undefined {
+    if (configuredPath) return configuredPath;
+
+    // Well-known install locations (macOS Homebrew, Linux, npm global)
+    const knownPaths = [
+      '/opt/homebrew/bin/codex',
+      '/usr/local/bin/codex',
+      '/usr/bin/codex',
+    ];
+
+    for (const p of knownPaths) {
+      try {
+        if (existsSync(p)) return p;
+      } catch { /* ignore */ }
+    }
+
+    // Safe dynamic detection: execFileSync with no shell to avoid injection
+    try {
+      const { execFileSync } = require('child_process');
+      const result = (execFileSync('which', ['codex'], { encoding: 'utf-8', timeout: 3000 }) as string).trim();
+      if (result && existsSync(result)) return result;
+    } catch { /* ignore */ }
+
+    return undefined;
   }
 
   private buildThreadOptions(vaultPath: string, modelOverride?: string): ThreadOptions {

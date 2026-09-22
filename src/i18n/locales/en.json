@@ -65,10 +65,10 @@
     }
   },
   "settings": {
-    "title": "Claudian Settings",
+    "title": "Codexian Settings",
     "customization": "Customization",
     "userName": {
-      "name": "What should Claudian call you?",
+      "name": "What should Codexian call you?",
       "desc": "Your name for personalized greetings (leave empty for generic greetings)"
     },
     "excludedTags": {
@@ -138,7 +138,7 @@
     },
     "hiddenSlashCommands": {
       "name": "Hidden Commands",
-      "desc": "Hide specific slash commands from the dropdown. Useful for hiding Claude Code commands that are not relevant to Claudian. Enter command names without the leading slash, one per line.",
+      "desc": "Hide specific slash commands from the dropdown. Useful for hiding Codex CLI commands that are not relevant to Codexian. Enter command names without the leading slash, one per line.",
       "placeholder": "commit\nbuild\ntest"
     },
     "mcpServers": {
@@ -146,8 +146,8 @@
       "desc": "Configure Model Context Protocol servers to extend Claude's capabilities with external tools and data sources. Servers with context-saving mode require @mention to activate."
     },
     "plugins": {
-      "name": "Claude Code Plugins",
-      "desc": "Enable or disable Claude Code plugins discovered from ~/.claude/plugins. Enabled plugins are stored per vault."
+      "name": "Codex CLI Plugins",
+      "desc": "Enable or disable Codex CLI plugins discovered from ~/.claude/plugins. Enabled plugins are stored per vault."
     },
     "subagents": {
       "name": "Subagents",
@@ -189,7 +189,7 @@
     "safety": "Safety",
     "loadUserSettings": {
       "name": "Load user Claude settings",
-      "desc": "Load ~/.claude/settings.json. When enabled, user's Claude Code permission rules may bypass Safe mode."
+      "desc": "Load ~/.claude/settings.json. When enabled, user's Codex CLI permission rules may bypass Safe mode."
     },
     "enableBlocklist": {
       "name": "Enable command blocklist",
@@ -271,7 +271,7 @@
     },
     "cliPath": {
       "name": "Claude CLI path",
-      "desc": "Custom path to Claude Code CLI. Leave empty for auto-detection.",
+      "desc": "Custom path to Codex CLI. Leave empty for auto-detection.",
       "descWindows": "For the native installer, use claude.exe. For npm/pnpm/yarn or other package manager installs, use the cli.js path (not claude.cmd).",
       "descUnix": "Paste the output of \"which claude\" — works for both native and npm/pnpm/yarn installs.",
       "validation": {

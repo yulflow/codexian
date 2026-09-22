@@ -6,10 +6,14 @@
 export type ClaudeModel = string;
 
 export const DEFAULT_CLAUDE_MODELS: { value: ClaudeModel; label: string; description: string }[] = [
-  { value: 'codex-mini', label: 'Codex Mini', description: 'Fast and efficient' },
-  { value: 'o4-mini', label: 'o4 Mini', description: 'Balanced reasoning' },
+  { value: 'gpt-5.3-codex', label: 'GPT-5.3 Codex', description: 'Latest, most capable' },
+  { value: 'gpt-5.2-codex', label: 'GPT-5.2 Codex', description: 'Previous generation' },
+  { value: 'codex-mini-latest', label: 'Codex Mini', description: 'Fast agent' },
+  { value: 'o4-mini', label: 'o4 Mini', description: 'Reasoning' },
   { value: 'o3', label: 'o3', description: 'Advanced reasoning' },
-  { value: 'gpt-4.1', label: 'GPT-4.1', description: 'Most capable' },
+  { value: 'gpt-4.1', label: 'GPT-4.1', description: 'Capable GPT' },
+  { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini', description: 'Balanced' },
+  { value: 'gpt-4o', label: 'GPT-4o', description: 'Multimodal' },
 ];
 
 export interface ModelWithBetas {
